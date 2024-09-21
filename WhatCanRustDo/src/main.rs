@@ -1,6 +1,10 @@
 mod rendering;
 mod program;
 
+
+
 fn main() {
-    println!("Hello, world!");
+    let prog = program::Program::new();
+
+
 }
