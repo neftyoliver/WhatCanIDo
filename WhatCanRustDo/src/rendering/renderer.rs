@@ -9,7 +9,7 @@ use vulkano::instance::{Instance, InstanceCreateFlags, InstanceCreateInfo, Insta
 use vulkano::swapchain::Surface;
 use vulkano::VulkanLibrary;
 
-use winit::event_loop::{ControlFlow, EventLoop};
+use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 
 use winit::error::EventLoopError;
 
@@ -17,7 +17,9 @@ use rendering::threading;
 
 use futures::executor::block_on;
 use futures::future::join;
-use winit::window::WindowAttributes;
+use winit::application::ApplicationHandler;
+use winit::event::WindowEvent;
+use winit::window::{WindowAttributes, WindowId};
 use crate::rendering;
 use crate::rendering::Position;
 use crate::window::App;
@@ -115,12 +117,25 @@ impl Renderer {
     }
 }
 
+
+
 #[test]
 fn test_render() {
     let main = thread::Builder::new().name("main".parse().unwrap()).spawn( || {
 
+        struct App {}
+        impl ApplicationHandler for App {
+            fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+                todo!()
+            }
+
+            fn window_event(&mut self, event_loop: &ActiveEventLoop, window_id: WindowId, event: WindowEvent) {
+                todo!()
+            }
+        }
+
         let mut event_loop = EventLoop::new().unwrap();
-        let mut application = App::new(WindowAttributes::default());
+        let mut application = App {  };
 
         event_loop.set_control_flow(ControlFlow::Poll);
         event_loop.set_control_flow(ControlFlow::Wait);
