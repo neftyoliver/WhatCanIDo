@@ -1,22 +1,33 @@
+use std::ops::Deref;
+use std::rc::Rc;
+use std::sync::Arc;
+use vulkano::swapchain::Surface;
 use winit::application::ApplicationHandler;
 use winit::event::WindowEvent;
-use winit::event_loop::ActiveEventLoop;
+use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 use winit::raw_window_handle::HasDisplayHandle;
 use winit::window::{Window, WindowAttributes, WindowId};
+use crate::rendering;
+use crate::rendering::renderer::Renderer;
 
-#[derive(Default)]
+#[derive(Clone)]
+struct WindowObjects {
+    attribute: WindowAttributes,
+    rcptr_window: Arc<Window>
+}
+
 pub struct App {
-    attribute: Option<WindowAttributes>,
-    window: Option<Window>,
-    closed: bool
+    closed: bool,
+    renderer: Arc<Renderer>,
+    window_objects: Arc<WindowObjects>
 }
 
 impl ApplicationHandler for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
 
-        let attrs = self.attribute.clone().unwrap().clone();
+        let attribs = self.window_objects.clone().unwrap().attribute;
 
-        self.window = Option::from(event_loop.create_window( attrs ).unwrap());
+        self.rcptr_window = Arc::new(event_loop.create_window( attribs ).unwrap());
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, window_id: WindowId, event: WindowEvent) {
@@ -31,7 +42,7 @@ impl ApplicationHandler for App {
             WindowEvent::RedrawRequested => {
                 //Refreshing!
 
-                self.window.as_ref().unwrap().request_redraw();
+                self.rcptr_window.clone().as_ref().request_redraw();
             }
 
             _ => ()
@@ -40,15 +51,28 @@ impl ApplicationHandler for App {
 }
 
 impl App {
-    pub fn new (attribute: WindowAttributes) -> App {
+    pub fn new(attribute: WindowAttributes) -> App {
+        println!("Creating application!");
+
+
+
         App {
-            attribute: Some(attribute),
-            window: Default::default(),
-            closed: false
+            closed: false,
+            renderer: Arc::default(),
+            attribute,
+            rcptr_window: Arc::default()
         }
     }
 
-    pub fn is_closed(&self) -> bool {
-        self.is_closed()
+    fn run_app(&self) {
+        let el = EventLoop::new().expect("Some thing going wrong with event loop creation.");
+
+        let mut event_loop = Rc::new(el);
+
+        event_loop.set_control_flow(ControlFlow::Poll);
+        event_loop.set_control_flow(ControlFlow::Wait);
+
+        let renderer = Renderer::new(Surface::required_extensions(&event_loop.deref()), 0);
+
     }
 }

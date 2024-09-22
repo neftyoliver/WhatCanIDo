@@ -5,7 +5,7 @@ use std::thread;
 use std::thread::{park, JoinHandle, Thread};
 use vulkano::command_buffer::pool::CommandPool;
 use vulkano::device::{Device, DeviceCreateInfo, Queue, QueueCreateInfo, QueueFlags};
-use vulkano::instance::{Instance, InstanceCreateFlags, InstanceCreateInfo};
+use vulkano::instance::{Instance, InstanceCreateFlags, InstanceCreateInfo, InstanceExtensions};
 use vulkano::swapchain::Surface;
 use vulkano::VulkanLibrary;
 
@@ -17,6 +17,7 @@ use rendering::threading;
 
 use futures::executor::block_on;
 use futures::future::join;
+use winit::window::WindowAttributes;
 use crate::rendering;
 use crate::rendering::Position;
 use crate::window::App;
@@ -50,17 +51,16 @@ pub struct Renderer {
 
 */
 impl Renderer {
-    pub fn new(event_loop: &EventLoop<()>, device_index: u32) -> Renderer {
+    pub fn new(/*event_loop: &EventLoop<()>*/surface_extension: InstanceExtensions, device_index: u32) -> Renderer {
 
         let vulkan_library = VulkanLibrary::new().expect("Failed to create vulkan library");
-        let instance_extensions = Surface::required_extensions(event_loop);
 
 
         let instance = Instance::new(
             vulkan_library,
             InstanceCreateInfo {
                 flags: InstanceCreateFlags::ENUMERATE_PORTABILITY,
-                enabled_extensions: instance_extensions,
+                enabled_extensions: surface_extension,
                 ..Default::default()
             }
         ).expect("failed to create Vulkan instance");
@@ -120,14 +120,16 @@ fn test_render() {
     let main = thread::Builder::new().name("main".parse().unwrap()).spawn( || {
 
         let mut event_loop = EventLoop::new().unwrap();
-        let mut application = App::default();
+        let mut application = App::new(WindowAttributes::default());
 
         event_loop.set_control_flow(ControlFlow::Poll);
         event_loop.set_control_flow(ControlFlow::Wait);
 
-        let mut rnd = Renderer::new(&event_loop, 0);
+        let ext = Surface::required_extensions(&event_loop);
 
-        let renderer = rendering::renderer::Renderer::new(&event_loop, 0);
+        let mut rnd = Renderer::new(ext, 0);
+
+        let renderer = rendering::renderer::Renderer::new(ext, 0);
 
         event_loop.run_app(&mut application).expect("TODO: panic message");
 
