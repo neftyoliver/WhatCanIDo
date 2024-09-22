@@ -1,43 +1,81 @@
-use std::sync::Arc;
+use std::cmp::PartialEq;
+use std::ops::Deref;
+use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 use std::thread;
+use std::thread::park;
+use std::time::Duration;
 use vulkano::swapchain::{Surface, Swapchain};
 use winit::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
-use winit::window::Window;
-use crate::rendering;
+use winit::application::ApplicationHandler;
+use winit::window::{Window, WindowAttributes};
+use crate::program::UpdateMessage::NoProblem;
+use crate::{program, rendering};
+use crate::window::App;
 
-#[derive(Default)]
+pub enum UpdateMessage {
+    NoProblem,
+    Shutdown,
+    Unknown
+}
+
+trait UpdateMethod {
+    fn call();
+}
+
+
+
 pub struct Program {
-    app: Option<Window>,
-    event_loop: Arc<EventLoop<()>>,
+    name: String,
     renderer: rendering::renderer::Renderer,
+    app: App,
+    thread_builder: Option<thread::Builder>,
 }
 
 impl Program {
-    pub fn new() -> Program {
-        let app = Default::default();
+    pub fn new(name: String) -> Program {
+        println!("Program preparing...");
 
-        let event_loop = EventLoop::new().unwrap();
+        let mut event_loop = EventLoop::new().unwrap();
+        let mut application = App::new(WindowAttributes::default().with_title("Hello World!"));
+
+        event_loop.set_control_flow(ControlFlow::Poll);
+        event_loop.set_control_flow(ControlFlow::Wait);
 
         let renderer = rendering::renderer::Renderer::new(&event_loop, 0);
 
+        let thread_builder = thread::Builder::new().name(name.clone());
+
+        println!("Program finished preparing");
+        
         Program {
-            app,
-            event_loop: Arc::new(event_loop),
-            renderer
+            name,
+            renderer,
+            app: application,
+            thread_builder: Some(thread_builder),
         }
     }
 
-    pub fn start(&mut self) {
-        let mut arc_window = self.event_loop.run_app()
+    fn update(&mut self) -> UpdateMessage {
+        NoProblem
+    }
 
-        let jh = thread::spawn(|| {
-            let window = winit::window::WindowBuilder
+    pub fn run(&mut self) {
+        println!("Program started");
 
-        });
+        let mut prog = Rc::new(&mut self);
 
-        jh.join()
+        let j = prog.thread_builder.take().unwrap().spawn(
+            || {
+                loop {
+                    prog.update();
+                }
+            }
+        ).expect("Program thread PANIC while starting.");
+
+        j.join().unwrap();
     }
 }

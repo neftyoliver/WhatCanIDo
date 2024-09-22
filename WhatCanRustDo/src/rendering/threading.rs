@@ -1,12 +1,16 @@
+use std::ops::Deref;
+use std::sync::Arc;
 use std::thread;
 
 
 
-/**
+/*
 
     * 쓰레드풀을 이용하려 멀티쓰레드 렌더링에 응용합니다.
 
 */
+
+/*
 
 struct Worker {
     id: u32,
@@ -30,8 +34,9 @@ impl Worker {
 
 
 
+#[derive(Clone)]
 pub(crate) struct RenderingThreadPool {
-    workers: Vec<Worker>,
+    workers: Arc<[Worker]>,
 }
 
 impl RenderingThreadPool {
@@ -46,12 +51,25 @@ impl RenderingThreadPool {
             workers.push(Worker::new(id))
         }
 
+        let S: usize = size as usize;
+        let mut arr_workers: [Worker; S] = [];
+
+        for worker in arr_workers {
+            arr_workers[worker.id as usize] = worker[worker.id as usize]
+        }
+
         RenderingThreadPool {
-            workers
+            workers: Arc::new(arr_workers),
         }
     }
 
-    /*
-    TODO: Make thread pool take task asynchronously.
-    */
+
 }
+
+#[test]
+fn main() {
+    let thread_pool = RenderingThreadPool::new(4);
+
+
+}
+*/

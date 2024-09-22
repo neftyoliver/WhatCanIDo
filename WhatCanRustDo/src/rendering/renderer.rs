@@ -9,7 +9,7 @@ use vulkano::instance::{Instance, InstanceCreateFlags, InstanceCreateInfo};
 use vulkano::swapchain::Surface;
 use vulkano::VulkanLibrary;
 
-use winit::event_loop::{EventLoop};
+use winit::event_loop::{ControlFlow, EventLoop};
 
 use winit::error::EventLoopError;
 
@@ -18,19 +18,8 @@ use rendering::threading;
 use futures::executor::block_on;
 use futures::future::join;
 use crate::rendering;
-
-pub struct Position{
-    x: f32,
-    y: f32,
-    z: f32
-}
-
-pub struct Mesh {
-    positions: Vec<Position>
-}
-
-
-
+use crate::rendering::Position;
+use crate::window::App;
 
 /**
 
@@ -40,6 +29,7 @@ pub struct Mesh {
     이를태면 렌더링할 모델을 정하거나 마우스 커서 움직임은 어플리케이션에서 담당하고 그걸 렌더링할 렌더러는 참조만 합니다.
 
 */
+#[derive(Clone)]
 pub struct Renderer {
     name: String,
     vulkan: Arc<Instance>,
@@ -49,9 +39,9 @@ pub struct Renderer {
     core_count: u32,
     drawing: bool,
 
-    render_thread_pool: threading::RenderingThreadPool,
+    //render_thread_pool: threading::RenderingThreadPool,
 
-    render_object: Option<Mesh>
+    render_object: Option<Arc<[Position]>>
 }
 
 /**
@@ -60,7 +50,6 @@ pub struct Renderer {
 
 */
 impl Renderer {
-
     pub fn new(event_loop: &EventLoop<()>, device_index: u32) -> Renderer {
 
         let vulkan_library = VulkanLibrary::new().expect("Failed to create vulkan library");
@@ -106,7 +95,7 @@ impl Renderer {
             }).unwrap();
 
 
-        let render_thread_pool = threading::RenderingThreadPool::new(1);
+        println!("Renderer created!");
 
         Renderer {
             name: "nefty renderer?".to_string(),
@@ -116,7 +105,6 @@ impl Renderer {
 
             core_count: 1,
             drawing: true,
-            render_thread_pool,
 
             render_object: None,
         }
@@ -131,9 +119,17 @@ impl Renderer {
 fn test_render() {
     let main = thread::Builder::new().name("main".parse().unwrap()).spawn( || {
 
-        let event_loop = EventLoop::builder().build();
+        let mut event_loop = EventLoop::new().unwrap();
+        let mut application = App::default();
 
-        let mut rnd = Renderer::new(event_loop, 0);
+        event_loop.set_control_flow(ControlFlow::Poll);
+        event_loop.set_control_flow(ControlFlow::Wait);
+
+        let mut rnd = Renderer::new(&event_loop, 0);
+
+        let renderer = rendering::renderer::Renderer::new(&event_loop, 0);
+
+        event_loop.run_app(&mut application).expect("TODO: panic message");
 
     }).unwrap().join();
 }
