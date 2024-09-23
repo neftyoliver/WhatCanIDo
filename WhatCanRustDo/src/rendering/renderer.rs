@@ -22,7 +22,6 @@ use winit::event::WindowEvent;
 use winit::window::{WindowAttributes, WindowId};
 use crate::rendering;
 use crate::rendering::Position;
-use crate::window::App;
 
 /**
 

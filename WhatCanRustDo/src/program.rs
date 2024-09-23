@@ -1,65 +1,72 @@
-use std::rc::Rc;
-use winit::application::ApplicationHandler;
-use winit::event::{DeviceEvent, DeviceId, StartCause, WindowEvent};
-use winit::event_loop::ActiveEventLoop;
-use winit::window::WindowId;
-use crate::rendering::renderer::Renderer;
 
-pub struct Program {
-    name: String,
-    dimension: (u32, u32),
-    renderer: Renderer
-}
+pub mod prog {
+    use std::sync::Arc;
+    use std::thread;
+    use vulkano::swapchain::Surface;
+    use winit::event_loop::{ControlFlow, EventLoop};
+    use winit::window::WindowAttributes;
+    use crate::rendering::renderer::Renderer;
 
-impl ApplicationHandler for Program {
-    fn new_events(&mut self, event_loop: &ActiveEventLoop, cause: StartCause) {
-        todo!()
+    mod win {
+        use std::ops::Deref;
+        use std::sync::Arc;
+        use winit::application::ApplicationHandler;
+        use winit::event::WindowEvent;
+        use winit::event_loop::ActiveEventLoop;
+        use winit::window::{Window, WindowAttributes, WindowId};
+        use crate::rendering::renderer::Renderer;
+
+        pub struct AppHandler {
+            pub(crate) renderer: Arc<Renderer>,
+            pub(crate) attribute: Arc<WindowAttributes>,
+            pub(crate) window: Option<Window>
+        }
+
+        impl ApplicationHandler for AppHandler {
+
+            fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+                let attr = self.attribute.clone().as_ref().clone();
+
+                self.window = Some(event_loop.create_window(attr).unwrap());
+            }
+
+            fn window_event(&mut self, event_loop: &ActiveEventLoop, window_id: WindowId, event: WindowEvent) {
+                match event {
+                    WindowEvent::CloseRequested => {
+                        event_loop.exit();
+                    }
+
+                    WindowEvent::RedrawRequested => {
+
+                        //rendering here
+
+                    }
+
+                    _ => {}
+                }
+
+
+            }
+        }
     }
 
-    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        todo!()
+    pub struct Program {
+        pub(crate) window_attributes: Arc<WindowAttributes>,
     }
 
-    fn user_event(&mut self, event_loop: &ActiveEventLoop, event: ()) {
-        todo!()
-    }
+    impl Program {
+        pub fn start(&mut self) {
+            let event_loop = EventLoop::new().unwrap();
+            event_loop.set_control_flow(ControlFlow::Poll);
 
-    fn window_event(&mut self, event_loop: &ActiveEventLoop, window_id: WindowId, event: WindowEvent) {
-        todo!()
-    }
+            let renderer = Arc::new(Renderer::new(Surface::required_extensions(&event_loop), 0));
+            let mut handler = win::AppHandler {
+                renderer: renderer,
+                attribute: self.window_attributes.clone(),
+                window: None
+            };
 
-    fn device_event(&mut self, event_loop: &ActiveEventLoop, device_id: DeviceId, event: DeviceEvent) {
-        todo!()
-    }
-
-    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
-        todo!()
-    }
-
-    fn suspended(&mut self, event_loop: &ActiveEventLoop) {
-        todo!()
-    }
-
-    fn exiting(&mut self, event_loop: &ActiveEventLoop) {
-        todo!()
-    }
-
-    fn memory_warning(&mut self, event_loop: &ActiveEventLoop) {
-        todo!()
-    }
-}
-
-
-impl Program {
-    pub fn new(name: String, size: (u32, u32)) -> Program {
-        println!("Program preparing...");
-
-        
-
-        Program {
-            name,
-            dimension: size,
-
+            event_loop.run_app(&mut handler).unwrap();
         }
     }
 }
