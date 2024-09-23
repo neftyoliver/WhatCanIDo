@@ -2,9 +2,12 @@
 name = "WhatCanRustDo"
 version = "0.1.0"
 edition = "2021"
+build = "build.rs"
 
 [dependencies]
 
 vulkano="0.34.1"
 winit = { version = "0.30.5", features = ["rwh_05"] }
 futures = "0.3.30"
+vulkano-shaders = "0.34.0"
+

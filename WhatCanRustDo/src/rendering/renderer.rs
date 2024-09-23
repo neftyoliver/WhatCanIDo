@@ -1,12 +1,12 @@
 use std::fmt::Debug;
 use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::thread::{park, JoinHandle, Thread};
-use vulkano::command_buffer::pool::CommandPool;
+use vulkano::command_buffer::pool::{CommandBufferAllocateInfo, CommandPool};
 use vulkano::device::{Device, DeviceCreateInfo, Queue, QueueCreateInfo, QueueFlags};
 use vulkano::instance::{Instance, InstanceCreateFlags, InstanceCreateInfo, InstanceExtensions};
-use vulkano::swapchain::Surface;
+use vulkano::swapchain::{ColorSpace, FullScreenExclusive, PresentMode, Surface, Swapchain, SwapchainCreateInfo};
 use vulkano::VulkanLibrary;
 
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
@@ -17,11 +17,69 @@ use rendering::threading;
 
 use futures::executor::block_on;
 use futures::future::join;
+use vulkano::command_buffer::allocator::{CommandBufferAllocator, StandardCommandBufferAllocator, StandardCommandBufferAllocatorCreateInfo};
+use vulkano::image::ImageUsage;
+use vulkano::memory::allocator::StandardMemoryAllocator;
+use vulkano::sync::Sharing;
 use winit::application::ApplicationHandler;
 use winit::event::WindowEvent;
-use winit::window::{WindowAttributes, WindowId};
+use winit::window::{Window, WindowAttributes, WindowId};
 use crate::rendering;
 use crate::rendering::Position;
+
+struct SurfaceManager {
+    surface: Arc<Surface>,
+    swapchain: Arc<Swapchain>,
+}
+
+impl SurfaceManager {
+    fn new(inst: Arc<Instance>, window: Arc<Window>, dev: Arc<Device>) -> SurfaceManager{
+        let surface = Surface::from_window(inst, window.clone()).unwrap();
+
+        let (mut swapchain, swapchain_images) = {
+            let surface_capabilities = dev
+                .clone()
+                .physical_device()
+                .surface_capabilities(&surface, Default::default()).unwrap();
+
+            let surface_image_format = dev
+                .physical_device()
+                .surface_formats(&surface, Default::default())
+                .unwrap()[0]
+                .0;
+
+            Swapchain::new(
+                dev.clone(),
+                surface.clone(),
+                SwapchainCreateInfo {
+                    min_image_count: surface_capabilities.min_image_count.max(2),
+                    image_format: surface_image_format,
+                    image_view_formats: vec![],
+                    image_color_space: ColorSpace::SrgbNonLinear,
+                    image_extent: [window.clone().inner_size().width, window.clone().inner_size().height],
+                    image_array_layers: 1,
+                    image_usage: ImageUsage::COLOR_ATTACHMENT,
+                    image_sharing: Sharing::Exclusive,
+                    pre_transform: Default::default(),
+                    composite_alpha: surface_capabilities.supported_composite_alpha.into_iter().next().unwrap(),
+                    present_mode: PresentMode::Immediate,
+                    present_modes: Default::default(),
+                    clipped: false,
+                    scaling_behavior: None,
+                    present_gravity: None,
+                    full_screen_exclusive: FullScreenExclusive::Default,
+                    win32_monitor: None,
+                    ..Default::default()
+                }
+            ).unwrap()
+        };
+
+        SurfaceManager {
+            surface,
+            swapchain
+        }
+    }
+}
 
 /**
 
@@ -38,10 +96,14 @@ pub struct Renderer {
     device: Arc<Device>,
     queue: Arc<Queue>,
 
+
+    /* Use single threaded rendering for now. */
+    command_buffer_allocator: Arc<StandardCommandBufferAllocator>,
+    //allocator: Arc<StandardMemoryAllocator>,
+
     core_count: u32,
     drawing: bool,
 
-    //render_thread_pool: threading::RenderingThreadPool,
 
     render_object: Option<Arc<[Position]>>
 }
@@ -95,6 +157,12 @@ impl Renderer {
                 ..Default::default()
             }).unwrap();
 
+        let command_buffer_allocator = Arc::new(StandardCommandBufferAllocator::new(
+            device.clone(),
+            StandardCommandBufferAllocatorCreateInfo::default(),
+        ));
+
+
 
         println!("Renderer created!");
 
@@ -104,6 +172,8 @@ impl Renderer {
             device,
             queue: queues.next().unwrap(),
 
+            command_buffer_allocator,
+
             core_count: 1,
             drawing: true,
 
@@ -111,7 +181,7 @@ impl Renderer {
         }
     }
 
-    fn render_default(&self) {
+    pub fn draw(this: &mut Arc<Self>) {
 
     }
 }

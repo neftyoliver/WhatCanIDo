@@ -38,7 +38,7 @@ pub mod prog {
 
                     WindowEvent::RedrawRequested => {
 
-                        //rendering here
+                        self.window.as_ref().clone().expect("No window to redraw.").request_redraw();
 
                     }
 
@@ -61,7 +61,7 @@ pub mod prog {
 
             let renderer = Arc::new(Renderer::new(Surface::required_extensions(&event_loop), 0));
             let mut handler = win::AppHandler {
-                renderer: renderer,
+                renderer,
                 attribute: self.window_attributes.clone(),
                 window: None
             };

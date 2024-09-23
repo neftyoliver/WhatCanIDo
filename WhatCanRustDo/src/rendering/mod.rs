@@ -17,3 +17,4 @@ mod metrix;
 mod shader;
 mod teapot;
 mod quad;
+mod gltf;
