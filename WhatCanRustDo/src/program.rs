@@ -38,9 +38,13 @@ pub mod prog {
 
                     WindowEvent::RedrawRequested => {
 
+                        &self.renderer.draw();
+
                         self.window.as_ref().clone().expect("No window to redraw.").request_redraw();
 
                     }
+
+
 
                     _ => {}
                 }

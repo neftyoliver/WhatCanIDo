@@ -18,8 +18,8 @@ use rendering::threading;
 use futures::executor::block_on;
 use futures::future::join;
 use vulkano::command_buffer::allocator::{CommandBufferAllocator, StandardCommandBufferAllocator, StandardCommandBufferAllocatorCreateInfo};
+use vulkano::command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage};
 use vulkano::image::ImageUsage;
-use vulkano::memory::allocator::StandardMemoryAllocator;
 use vulkano::sync::Sharing;
 use winit::application::ApplicationHandler;
 use winit::event::WindowEvent;
@@ -99,6 +99,7 @@ pub struct Renderer {
 
     /* Use single threaded rendering for now. */
     command_buffer_allocator: Arc<StandardCommandBufferAllocator>,
+    command_buffer_builder,
     //allocator: Arc<StandardMemoryAllocator>,
 
     core_count: u32,
@@ -162,7 +163,13 @@ impl Renderer {
             StandardCommandBufferAllocatorCreateInfo::default(),
         ));
 
+        let mut command_buffer_builder =
+            AutoCommandBufferBuilder::primary(&command_buffer_allocator, queues.next().clone().unwrap().queue_family_index(), CommandBufferUsage::OneTimeSubmit).unwrap();
 
+
+        /*
+        TODO: Hold every thing and try to render.
+        */
 
         println!("Renderer created!");
 
@@ -173,6 +180,7 @@ impl Renderer {
             queue: queues.next().unwrap(),
 
             command_buffer_allocator,
+            command_buffer_builder,
 
             core_count: 1,
             drawing: true,
@@ -181,7 +189,7 @@ impl Renderer {
         }
     }
 
-    pub fn draw(this: &mut Arc<Self>) {
+    pub fn draw(self: &mut Arc<Self>) {
 
     }
 }
