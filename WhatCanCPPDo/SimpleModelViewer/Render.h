@@ -5,19 +5,16 @@
 #ifndef RENDER_H
 #define RENDER_H
 #include <cstdint>
+#include <string>
 
 namespace renderer {
 
-    class WindowManager {
-        public:
-        WindowManager(uint32_t width, uint32_t height);
-        ~WindowManager();
-    };
-
     class Render {
+
+
+
         public:
         Render();
-
         ~Render();
     };
 
