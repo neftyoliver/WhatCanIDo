@@ -1,7 +1,7 @@
 #include <vulkan/vulkan.hpp>
 
-int main() {
 
+int main() {
 
     return 0;
 }
